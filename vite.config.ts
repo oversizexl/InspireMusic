@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.svg'],
+      includeAssets: ['android-chrome-192x192.png', 'android-chrome-512x512.png', 'apple-touch-icon.png', 'favicon-16x16.png', 'favicon-32x32.png', 'favicon.ico'],
       manifest: {
         name: 'InspireMusic',
         short_name: 'InspireMusic',
@@ -18,14 +18,14 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'logo.svg',
+            src: 'android-chrome-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/png'
           },
           {
-            src: 'logo.svg',
+            src: 'android-chrome-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/png'
           }
         ]
       }
