@@ -21,7 +21,7 @@ export const CoverImage = React.forwardRef<HTMLImageElement, CoverImageProps>(
       className,
       iconSize = "40%",
       imageClassName,
-      fallbackDelayMs = 4000,
+      fallbackDelayMs = 10000,
       ...props
     },
     ref
@@ -82,7 +82,6 @@ export const CoverImage = React.forwardRef<HTMLImageElement, CoverImageProps>(
             isLoaded ? "opacity-100" : "opacity-0",
             imageClassName
           )}
-          loading="lazy"
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
           {...props}
