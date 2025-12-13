@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import React from 'react';
 import type { Song } from '../types';
 import { X, Play, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useOverlayVisibility } from '../hooks/useOverlayVisibility';
+import { ConfirmDialog } from './ui/ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface QueueViewProps {
   queue: Song[];
@@ -22,54 +25,13 @@ export const QueueView: React.FC<QueueViewProps> = ({
   onClear,
   requestClose,
 }) => {
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-
-  // Entry animation
-  useEffect(() => {
-    const timer = requestAnimationFrame(() => {
-      setIsVisible(true);
-    });
-    return () => cancelAnimationFrame(timer);
-  }, []);
-
-  // Handle close with exit animation
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setIsVisible(false);
-    setTimeout(onClose, 300);
-  }, [onClose]);
-
-  // Confirm clear timer
-  useEffect(() => {
-    if (confirmClear) {
-      const timer = setTimeout(() => setConfirmClear(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [confirmClear]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      setIsVisible(false);
-    };
-  }, []);
-
-  // 外部请求关闭时触发退出动画
-  const hasRequestedCloseRef = useRef(false);
-  /* eslint-disable react-hooks/set-state-in-effect -- Intentional: trigger close animation on external request */
-  useLayoutEffect(() => {
-    if (requestClose && !isClosing && !hasRequestedCloseRef.current) {
-      hasRequestedCloseRef.current = true;
-      handleClose();
-    }
-    // Reset when requestClose becomes false
-    if (!requestClose) {
-      hasRequestedCloseRef.current = false;
-    }
-  }, [requestClose, isClosing, handleClose]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const { isVisible, isClosing, close } = useOverlayVisibility({ onClose, requestClose });
+  const confirmClear = useConfirmDialog({
+    onConfirm: () => {
+      onClear();
+      close();
+    },
+  });
   return (
     <>
       {/* Backdrop */}
@@ -78,7 +40,7 @@ export const QueueView: React.FC<QueueViewProps> = ({
           "fixed inset-0 bg-black/50 z-[59] transition-opacity duration-300",
           isVisible && !isClosing ? "opacity-100" : "opacity-0"
         )}
-        onClick={handleClose}
+        onClick={close}
       />
 
       {/* Drawer */}
@@ -92,24 +54,13 @@ export const QueueView: React.FC<QueueViewProps> = ({
           <h2 className="font-bold text-white">播放队列 ({queue.length})</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (confirmClear) {
-                  onClear();
-                  setConfirmClear(false);
-                  handleClose();
-                } else {
-                  setConfirmClear(true);
-                }
-              }}
-              className={clsx(
-                "p-2 rounded transition-colors",
-                confirmClear ? "text-red-500 hover:bg-red-500/10" : "text-gray-400 hover:text-white hover:bg-white/10"
-              )}
-              title={confirmClear ? "点击确认清空" : "清空列表"}
+              onClick={confirmClear.show}
+              className="p-2 rounded transition-colors text-gray-400 hover:text-white hover:bg-white/10"
+              title="清空列表"
             >
               <Trash2 size={18} />
             </button>
-            <button onClick={handleClose} className="text-gray-400 hover:text-white">
+            <button onClick={close} className="text-gray-400 hover:text-white">
               <X size={20} />
             </button>
           </div>
@@ -158,6 +109,16 @@ export const QueueView: React.FC<QueueViewProps> = ({
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmClear.open}
+        title="清空播放队列？"
+        message="将移除当前队列中的所有歌曲。"
+        danger
+        confirmLabel="清空"
+        onConfirm={confirmClear.handleConfirm}
+        onCancel={confirmClear.handleCancel}
+      />
     </>
   );
 };

@@ -1,10 +1,12 @@
 import React from 'react';
-import type { Song, LocalPlaylist, Platform } from '../types';
-import { SongList } from './SongList';
+import type { Song, LocalPlaylist } from '../types';
+import { SongListPanel } from './ui/SongListPanel';
 import { Play, Edit2, Trash2, Heart } from 'lucide-react';
 import { CoverImage } from './ui/CoverImage';
-import { buildFileUrl } from '../api';
 import { getGradientFromId } from '../utils/colors';
+import { FAVORITES_ID, FAVORITES_NAME, getPlaylistCover } from '../utils/playlists';
+import { PLATFORM_LABELS } from '../utils/platform';
+import { buildFileUrl } from '../api';
 
 interface PlaylistDetailViewProps {
   playlist: LocalPlaylist;
@@ -25,18 +27,9 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
   onRename,
   onDelete,
 }) => {
-  const platformLabels: Record<Platform, string> = {
-    netease: '网易云',
-    kuwo: '酷我',
-    qq: 'QQ',
-  };
+  const coverSrc = getPlaylistCover(playlist);
 
-  const coverSrc =
-    playlist.pic ||
-    playlist.songs[0]?.pic ||
-    (playlist.songs[0] ? buildFileUrl(playlist.songs[0].platform, playlist.songs[0].id, 'pic') : undefined);
-
-  const isFavorites = playlist.id === 'favorites';
+  const isFavorites = playlist.id === FAVORITES_ID;
   const coverContainerClass = isFavorites
     ? 'bg-gradient-to-br from-pink-500 to-purple-600'
     : getGradientFromId(playlist.id);
@@ -59,7 +52,7 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
         <div className="flex flex-col gap-2 md:gap-4">
           <span className="text-xs md:text-sm font-bold uppercase tracking-wider">歌单</span>
           <div className="flex items-center gap-3 group">
-            <h1 className="text-3xl md:text-6xl font-black text-white mb-1 md:mb-2">{playlist.name}</h1>
+            <h1 className="text-3xl md:text-6xl font-black text-white mb-1 md:mb-2">{isFavorites ? FAVORITES_NAME : playlist.name}</h1>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-400">
             {isFavorites ? (
@@ -70,7 +63,7 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
                 {playlist.source && (
                   <>
                     <span>•</span>
-                    <span>{platformLabels[playlist.source]}</span>
+                    <span>{PLATFORM_LABELS[playlist.source]}</span>
                   </>
                 )}
                 <span>•</span>
@@ -114,17 +107,15 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
         )}
       </div>
 
-      <div className="bg-black/20 rounded-xl overflow-hidden">
-        <SongList
-          songs={playlist.songs.map(s => ({
-            ...s,
-            pic: s.pic || buildFileUrl(s.platform, s.id, 'pic')
-          }))}
-          currentSong={currentSong}
-          isPlaying={isPlaying}
-          onPlay={onPlay}
-        />
-      </div>
+      <SongListPanel
+        songs={playlist.songs.map(s => ({
+          ...s,
+          pic: s.pic || buildFileUrl(s.platform, s.id, 'pic')
+        }))}
+        currentSong={currentSong}
+        isPlaying={isPlaying}
+        onPlay={onPlay}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Play, Pause } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Song, Platform } from '../types';
 import { CoverImage } from './ui/CoverImage';
+import { PLATFORM_BADGE_CLASSNAMES, PLATFORM_LABELS } from '../utils/platform';
 
 interface SongListProps {
   songs: Song[];
@@ -14,25 +15,11 @@ interface SongListProps {
   indexOffset?: number;
 }
 
-const PlatformBadge = memo<{ platform: Platform }>(({ platform }) => {
-  const colors = {
-    netease: 'bg-red-500/20 text-red-400 border-red-500/30',
-    kuwo: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    qq: 'bg-green-500/20 text-green-400 border-green-500/30',
-  };
-
-  const names = {
-    netease: '网易云',
-    kuwo: '酷我',
-    qq: 'QQ',
-  };
-
-  return (
-    <span className={clsx("text-[10px] px-1.5 py-0.5 rounded border", colors[platform])}>
-      {names[platform]}
-    </span>
-  );
-});
+const PlatformBadge = memo<{ platform: Platform }>(({ platform }) => (
+  <span className={clsx("text-[10px] px-1.5 py-0.5 rounded border", PLATFORM_BADGE_CLASSNAMES[platform])}>
+    {PLATFORM_LABELS[platform]}
+  </span>
+));
 
 PlatformBadge.displayName = 'PlatformBadge';
 
@@ -131,6 +118,16 @@ const ROW_HEIGHT = 64; // px - matches py-3 (12px*2) + content (~40px)
 // Increase threshold to avoid issues with containers that don't have fixed height
 const VIRTUALIZATION_THRESHOLD = 200;
 
+const SongListHeader: React.FC = () => (
+  <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_4fr_3fr_2fr_1fr] gap-4 px-4 py-2 border-b border-gray-800 text-gray-400 text-sm font-medium sticky top-0 bg-background z-10">
+    <div className="w-8 text-center">#</div>
+    <div>标题</div>
+    <div className="hidden md:block">歌手</div>
+    <div className="hidden md:block">专辑</div>
+    <div className="hidden md:block text-right">来源</div>
+  </div>
+);
+
 export const SongList: React.FC<SongListProps> = memo(({
   songs,
   currentSong,
@@ -175,13 +172,7 @@ export const SongList: React.FC<SongListProps> = memo(({
     return (
       <div className="w-full flex flex-col">
         {showHeader && (
-          <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_4fr_3fr_2fr_1fr] gap-4 px-4 py-2 border-b border-gray-800 text-gray-400 text-sm font-medium sticky top-0 bg-background z-10">
-            <div className="w-8 text-center">#</div>
-            <div>标题</div>
-            <div className="hidden md:block">歌手</div>
-            <div className="hidden md:block">专辑</div>
-            <div className="hidden md:block text-right">来源</div>
-          </div>
+          <SongListHeader />
         )}
         <div className="flex flex-col pb-4">
           {songs.map((song, index) => {
@@ -208,13 +199,7 @@ export const SongList: React.FC<SongListProps> = memo(({
   return (
     <div className="w-full flex flex-col" style={{ height: '70vh', minHeight: '400px' }}>
       {showHeader && (
-        <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_4fr_3fr_2fr_1fr] gap-4 px-4 py-2 border-b border-gray-800 text-gray-400 text-sm font-medium sticky top-0 bg-background z-10">
-          <div className="w-8 text-center">#</div>
-          <div>标题</div>
-          <div className="hidden md:block">歌手</div>
-          <div className="hidden md:block">专辑</div>
-          <div className="hidden md:block text-right">来源</div>
-        </div>
+        <SongListHeader />
       )}
       <div
         ref={parentRef}

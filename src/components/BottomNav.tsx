@@ -1,10 +1,10 @@
 import React from 'react';
-import { Home, Search, Library } from 'lucide-react';
 import { clsx } from 'clsx';
+import { NAV_TABS, type NavTabId } from './navigation/navTabs';
 
 interface BottomNavProps {
-  activeTab: 'search' | 'toplists' | 'library' | 'playlist';
-  onTabChange: (tab: 'search' | 'toplists' | 'library' | 'playlist') => void;
+  activeTab: NavTabId;
+  onTabChange: (tab: NavTabId) => void;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -13,36 +13,23 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 }) => {
   return (
     <div className="md:hidden h-16 bg-black/95 backdrop-blur-lg border-t border-white/10 flex items-center justify-around px-4 z-[70]">
-      <button
-        onClick={() => onTabChange('search')}
-        className={clsx(
-          "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
-          activeTab === 'search' ? "text-primary" : "text-gray-400 hover:text-white"
-        )}
-      >
-        <Search size={24} />
-        <span className="text-xs font-medium">搜索</span>
-      </button>
-      <button
-        onClick={() => onTabChange('toplists')}
-        className={clsx(
-          "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
-          activeTab === 'toplists' ? "text-primary" : "text-gray-400 hover:text-white"
-        )}
-      >
-        <Home size={24} />
-        <span className="text-xs font-medium">排行榜</span>
-      </button>
-      <button
-        onClick={() => onTabChange('library')}
-        className={clsx(
-          "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
-          activeTab === 'library' || activeTab === 'playlist' ? "text-primary" : "text-gray-400 hover:text-white"
-        )}
-      >
-        <Library size={24} />
-        <span className="text-xs font-medium">音乐库</span>
-      </button>
+      {NAV_TABS.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id || (tab.id === 'library' && activeTab === 'playlist');
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={clsx(
+              "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
+              isActive ? "text-primary" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Icon size={24} />
+            <span className="text-xs font-medium">{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };

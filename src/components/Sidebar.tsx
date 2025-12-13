@@ -1,13 +1,14 @@
 import React from 'react';
-import { Home, Search, Library, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { LocalPlaylist } from '../types';
 import { CoverImage } from './ui/CoverImage';
-import { buildFileUrl } from '../api';
+import { FAVORITES_ID, getPlaylistCover } from '../utils/playlists';
+import { NAV_TABS, type NavTabId } from './navigation/navTabs';
 
 interface SidebarProps {
-  activeTab: 'search' | 'toplists' | 'library' | 'playlist';
-  onTabChange: (tab: 'search' | 'toplists' | 'library' | 'playlist') => void;
+  activeTab: NavTabId;
+  onTabChange: (tab: NavTabId) => void;
   playlists: LocalPlaylist[];
   activePlaylistId: string;
   onPlaylistSelect: (id: string) => void;
@@ -29,42 +30,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <img src="/logo.svg" alt="Logo" className="w-10 h-10" />
           <span className="tracking-tight">InspireMusic</span>
         </div>
-        <button
-          onClick={() => onTabChange('search')}
-          className={clsx(
-            "flex items-center gap-4 px-4 py-3 rounded-md transition-colors font-medium",
-            activeTab === 'search' ? "text-white bg-surface" : "hover:text-white hover:bg-surface/50"
-          )}
-        >
-          <Search size={24} />
-          搜索
-        </button>
-        <button
-          onClick={() => onTabChange('toplists')}
-          className={clsx(
-            "flex items-center gap-4 px-4 py-3 rounded-md transition-colors font-medium",
-            activeTab === 'toplists' ? "text-white bg-surface" : "hover:text-white hover:bg-surface/50"
-          )}
-        >
-          <Home size={24} />
-          排行榜
-        </button>
+        {NAV_TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={clsx(
+                "flex items-center gap-4 px-4 py-3 rounded-md transition-colors font-medium",
+                activeTab === tab.id ? "text-white bg-surface" : "hover:text-white hover:bg-surface/50"
+              )}
+            >
+              <Icon size={24} />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2">
-          <button
-            onClick={() => onTabChange('library')}
-            className={clsx(
-              "flex items-center gap-2 font-bold transition-colors",
-              activeTab === 'library' ? "text-white" : "hover:text-white"
-            )}
-          >
-            <Library size={24} />
-            音乐库
-          </button>
-        </div>
-
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {playlists.map((pl) => (
             <div
@@ -76,13 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onPlaylistSelect(pl.id)}
             >
               <div className="flex items-center gap-3 overflow-hidden">
-                {pl.id === 'favorites' ? (
+                {pl.id === FAVORITES_ID ? (
                   <div className="min-w-[32px] h-8 w-8 rounded flex items-center justify-center bg-gradient-to-br from-pink-500 to-purple-600 shrink-0">
                     <Heart size={16} fill="white" className="text-white" />
                   </div>
                 ) : (
                   <CoverImage
-                    src={pl.pic || pl.songs[0]?.pic || (pl.songs[0] ? buildFileUrl(pl.songs[0].platform, pl.songs[0].id, 'pic') : undefined)}
+                    src={getPlaylistCover(pl)}
                     alt={pl.name}
                     className="min-w-[32px] h-8 w-8 rounded object-cover bg-gray-800 shrink-0"
                     iconSize={16}

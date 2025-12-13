@@ -39,6 +39,8 @@ import { ListMusic, Heart, Check } from 'lucide-react';
 import { getGradientFromId } from './utils/colors';
 import { parseLyrics } from './utils/lyrics';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FAVORITES_ID, FAVORITES_NAME, buildFavoritesPlaylist, toLocalPlaylist } from './utils/playlists';
+import { PLATFORM_OPTIONS_LONG } from './utils/platform';
 
 const applyQualityToUrl = (rawUrl: string, quality: Quality): string => {
   try {
@@ -90,6 +92,62 @@ function App() {
   const [searchLockedFromPage, setSearchLockedFromPage] = useState<number | undefined>(undefined);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const performSearch = async ({ page, term, resetLocked }: { page: number; term: string; resetLocked?: boolean }) => {
+    const normalized = term.trim();
+    if (!normalized) return;
+
+    const requestLimit = searchSource === 'aggregate' ? 10 : 30;
+
+    if (resetLocked) {
+      setSearchLockedFromPage(undefined);
+      setSearchTotal(undefined);
+      setSearchPage(1);
+    }
+
+    setSearching(true);
+    setError(null);
+
+    try {
+      const data = searchSource === 'aggregate'
+        ? await aggregateSearch(normalized, requestLimit, page)
+        : await searchSongs(searchSource, normalized, requestLimit, page);
+
+      if (!data.results.length) {
+        setSearchLockedFromPage((prev) => {
+          const lockPage = page === 1 ? 2 : page;
+          return prev !== undefined ? Math.min(prev, lockPage) : lockPage;
+        });
+        if (resetLocked) {
+          setSearchResults([]);
+          setSearchTotal(data.total ?? 0);
+        }
+        return;
+      }
+
+      setSearchResults(data.results);
+      setSearchTotal(data.total ?? data.results.length);
+      setSearchPage(page);
+
+      const currentCount = data.total ?? data.results.length;
+      if (searchSource !== 'aggregate' && currentCount < requestLimit) {
+        setSearchLockedFromPage((prev) => {
+          const lockPage = page + 1;
+          return prev !== undefined ? Math.min(prev, lockPage) : lockPage;
+        });
+      }
+    } catch {
+      setError('搜索失败');
+      if (!resetLocked && page > searchPage) {
+        setSearchLockedFromPage((prev) => {
+          const lockPage = page;
+          return prev !== undefined ? Math.min(prev, lockPage) : lockPage;
+        });
+      }
+    } finally {
+      setSearching(false);
+    }
+  };
 
   // Player State - 从 Zustand store 获取持久化状态
   const {
@@ -154,8 +212,8 @@ function App() {
   useEffect(() => {
     if (!viewingPlaylist) return;
 
-    if (viewingPlaylist.id === 'favorites') {
-      setViewingPlaylist((prev) => (prev ? { ...prev, name: '我喜欢的音乐', songs: favorites } : prev));
+    if (viewingPlaylist.id === FAVORITES_ID) {
+      setViewingPlaylist((prev) => (prev ? { ...prev, name: FAVORITES_NAME, songs: favorites } : prev));
       return;
     }
 
@@ -564,29 +622,16 @@ function App() {
     setLoadingPlaylist(true);
     try {
       const data = await getPlaylist(playlistSource, id.trim());
-      const songs: Song[] = (data.list || []).map((item) => ({
-        id: item.id,
-        name: item.name,
-        artist: item.artist,
-        album: item.album,
-        platform: item.platform || playlistSource,
-        url: item.url,
-        pic: item.pic,
-        lrc: item.lrc,
-        info: item.info,
-        types: item.types,
-      }));
-      const imported: LocalPlaylist = {
+      const imported = toLocalPlaylist(data, {
         id: `import-${playlistSource}-${Date.now()}`,
         name: data.info?.name || '导入歌单',
-        songs,
-        source: data.source || playlistSource,
+        source: playlistSource,
         origin: data.info?.author,
         pic: data.info?.pic,
         desc: data.info?.desc,
-      };
+      });
       addPlaylist(imported);
-      addToast('success', `成功导入歌单：${data.info?.name}`);
+      addToast('success', `成功导入歌单：${imported.name}`);
     } catch {
       addToast('error', '导入失败，请检查ID或链接');
     } finally {
@@ -679,13 +724,13 @@ function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           playlists={[
-            { id: 'favorites', name: '我喜欢的音乐', songs: favorites },
+            buildFavoritesPlaylist(favorites),
             ...playlists,
           ]}
           activePlaylistId={viewingPlaylist?.id || ''}
           onPlaylistSelect={(id) => {
-            if (id === 'favorites') {
-              setViewingPlaylist({ id: 'favorites', name: '我喜欢的音乐', songs: favorites });
+            if (id === FAVORITES_ID) {
+              setViewingPlaylist(buildFavoritesPlaylist(favorites));
               setActiveTab('playlist');
               return;
             }
@@ -802,74 +847,20 @@ function App() {
               searchSource={searchSource}
               onSearchSourceChange={setSearchSource}
               onSearch={async (kw?: string) => {
-                const searchKeyword = kw || keyword;
-                if (!searchKeyword.trim()) return;
-                const requestLimit = searchSource === 'aggregate' ? 10 : 30;
-                setSearching(true);
-                setError(null);
-                setSearchPage(1);
-                setSearchLockedFromPage(undefined);
-                // Update the keyword state if a different one was passed (e.g. from history click)
+                const term = kw ?? keyword;
                 if (kw) setKeyword(kw);
-
-                try {
-                  const data = searchSource === 'aggregate'
-                    ? await aggregateSearch(searchKeyword.trim(), requestLimit, 1)
-                    : await searchSongs(searchSource, searchKeyword.trim(), requestLimit, 1);
-                  setSearchResults(data.results);
-                  setSearchTotal(data.total ?? data.results.length);
-                  if (!data.results.length) {
-                    setSearchLockedFromPage(2);
-                  }
-                  const currentCount = data.total ?? data.results.length;
-                  if (searchSource !== 'aggregate' && currentCount < requestLimit) {
-                    setSearchLockedFromPage((prev) => (prev !== undefined ? Math.min(prev, 2) : 2));
-                  }
-                } catch {
-                  setError('搜索失败');
-                } finally {
-                  setSearching(false);
-                }
+                await performSearch({ page: 1, term, resetLocked: true });
               }}
               page={searchPage}
               limit={30}
               total={searchTotal}
               lockedFromPage={searchLockedFromPage}
               onPageChange={async (page) => {
-                const searchKeyword = keyword;
-                if (!searchKeyword.trim()) return;
+                const term = keyword;
+                if (!term.trim()) return;
                 if (page === searchPage) return;
                 if (searchLockedFromPage !== undefined && page >= searchLockedFromPage) return;
-
-                const requestLimit = searchSource === 'aggregate' ? 10 : 30;
-                setSearching(true);
-                setError(null);
-                try {
-                  const data = searchSource === 'aggregate'
-                    ? await aggregateSearch(searchKeyword.trim(), requestLimit, page)
-                    : await searchSongs(searchSource, searchKeyword.trim(), requestLimit, page);
-
-                  if (!data.results.length) {
-                    setSearchLockedFromPage((prev) => (prev !== undefined ? Math.min(prev, page) : page));
-                    return;
-                  }
-
-                  setSearchResults(data.results);
-                  setSearchTotal(data.total ?? data.results.length);
-                  setSearchPage(page);
-
-                  const currentCount = data.total ?? data.results.length;
-                  if (searchSource !== 'aggregate' && currentCount < requestLimit) {
-                    setSearchLockedFromPage((prev) => (prev !== undefined ? Math.min(prev, page + 1) : page + 1));
-                  }
-                } catch {
-                  setError('搜索失败');
-                  if (page > searchPage) {
-                    setSearchLockedFromPage((prev) => (prev !== undefined ? Math.min(prev, page) : page));
-                  }
-                } finally {
-                  setSearching(false);
-                }
+                await performSearch({ page, term });
               }}
               results={searchResults}
               loading={searching}
@@ -904,11 +895,7 @@ function App() {
                 <Select
                   value={toplistSource}
                   onChange={(val) => setToplistSource(val as Platform)}
-                  options={[
-                    { value: 'netease', label: '网易云音乐' },
-                    { value: 'kuwo', label: '酷我音乐' },
-                    { value: 'qq', label: 'QQ音乐' },
-                  ]}
+                  options={PLATFORM_OPTIONS_LONG}
                   className="w-32"
                 />
               </div>
@@ -925,15 +912,17 @@ function App() {
                       try {
                         const data = await getToplistSongs(toplistSource, id);
                         const summary = toplists.find(t => t.id === id);
-                        const tempPlaylist: LocalPlaylist = {
-                          id: `toplist-${id}`,
-                          name: summary?.name || '排行榜',
-                          songs: data.list,
-                          source: toplistSource,
-                          origin: summary?.updateFrequency,
-                          pic: summary?.pic,
-                          url: summary?.url,
-                        };
+                        const tempPlaylist = toLocalPlaylist(
+                          { list: data.list, source: data.source },
+                          {
+                            id: `toplist-${id}`,
+                            name: summary?.name || '排行榜',
+                            source: toplistSource,
+                            origin: summary?.updateFrequency,
+                            pic: summary?.pic,
+                            url: summary?.url,
+                          },
+                        );
                         setViewingPlaylist(tempPlaylist);
                         setActiveTab('playlist');
                       } catch (e) {
@@ -1103,14 +1092,14 @@ function App() {
       >
         <div className="flex flex-col gap-2 max-h-[35vh] overflow-y-auto custom-scrollbar">
           <div
-            onClick={() => songToAddToPlaylist && toggleSongInPlaylist('favorites', songToAddToPlaylist)}
+            onClick={() => songToAddToPlaylist && toggleSongInPlaylist(FAVORITES_ID, songToAddToPlaylist)}
             className="flex items-center justify-between p-3 rounded-md hover:bg-white/10 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded flex items-center justify-center">
                 <Heart size={20} fill="white" className="text-white" />
               </div>
-              <span className="font-medium text-white">我喜欢的音乐</span>
+              <span className="font-medium text-white">{FAVORITES_NAME}</span>
             </div>
             {songToAddToPlaylist && favorites.some(s => s.id === songToAddToPlaylist.id && s.platform === songToAddToPlaylist.platform) && (
               <Check size={20} className="text-primary" />

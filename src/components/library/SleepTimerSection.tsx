@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { Timer, Clock, X } from 'lucide-react';
+import { SettingsSection } from './SettingsSection';
 
 interface SleepTimerSectionProps {
     sleepEndTime: number | null;
@@ -58,12 +59,7 @@ export const SleepTimerSection: React.FC<SleepTimerSectionProps> = ({
     };
 
     return (
-        <div>
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Timer size={20} />
-                定时关闭
-            </h3>
-
+        <SettingsSection icon={<Timer size={20} />} title="定时关闭">
             {sleepEndTime ? (
                 <div className="flex items-center gap-4 bg-primary/10 border border-primary/20 rounded-lg p-3">
                     <Clock size={20} className="text-primary" />
@@ -127,6 +123,6 @@ export const SleepTimerSection: React.FC<SleepTimerSectionProps> = ({
                     )}
                 </div>
             )}
-        </div>
+        </SettingsSection>
     );
 };

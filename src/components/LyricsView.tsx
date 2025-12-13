@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useCallback, useState, useMemo, useLayoutEffect } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import type { ParsedLyricLine, Song } from '../types';
 import { ChevronDown, AudioLines } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CoverImage } from './ui/CoverImage';
+import { useOverlayVisibility } from '../hooks/useOverlayVisibility';
 
 interface LyricsViewProps {
   lyrics: ParsedLyricLine[];
@@ -33,8 +34,8 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoScrollingRef = useRef(false);
   const lastActiveLyricIndexRef = useRef(activeLyricIndex);
-  const [isVisible, setIsVisible] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const { isVisible, isClosing, close } = useOverlayVisibility({ onClose, requestClose });
 
   // Check if lyrics contain translations
   const hasTranslations = useMemo(() => {
@@ -57,14 +58,6 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
         clearTimeout(timeoutRef);
       }
     };
-  }, []);
-
-  // Entry animation
-  useEffect(() => {
-    const timer = requestAnimationFrame(() => {
-      setIsVisible(true);
-    });
-    return () => cancelAnimationFrame(timer);
   }, []);
 
   // Register lyric element ref
@@ -171,38 +164,18 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
     }
   }, [onSeek]);
 
-  // Handle close with exit animation
-  const handleClose = useCallback(() => {
-    setIsVisible(false);
-    setTimeout(onClose, 300);
-  }, [onClose]);
-
-  // 外部请求关闭时触发退出动画
-  const hasRequestedCloseRef = useRef(false);
-   
-  useLayoutEffect(() => {
-    if (requestClose && isVisible && !hasRequestedCloseRef.current) {
-      hasRequestedCloseRef.current = true;
-      handleClose();
-    }
-    // Reset when requestClose becomes false
-    if (!requestClose) {
-      hasRequestedCloseRef.current = false;
-    }
-  }, [requestClose, isVisible, handleClose]);
-   
 
   return (
     <div
       className={clsx(
         "fixed inset-0 bg-gradient-to-b from-gray-900 to-black z-40 flex flex-col transition-all duration-300 ease-out",
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+        isVisible && !isClosing ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-6">
         <button
-          onClick={handleClose}
+          onClick={close}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
         >
           <ChevronDown size={32} />

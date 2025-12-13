@@ -2,6 +2,7 @@ import React from 'react';
 import { Headphones } from 'lucide-react';
 import { Select } from '../ui/Select';
 import type { Quality } from '../../types';
+import { SettingsSection } from './SettingsSection';
 
 interface QualitySettingsSectionProps {
     quality: Quality;
@@ -13,11 +14,7 @@ export const QualitySettingsSection: React.FC<QualitySettingsSectionProps> = ({
     onQualityChange,
 }) => {
     return (
-        <div>
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Headphones size={20} />
-                音质设置
-            </h3>
+        <SettingsSection icon={<Headphones size={20} />} title="音质设置">
             <div className="flex items-center gap-4">
                 <span className="text-gray-400 text-sm">选择默认播放音质：</span>
                 <Select
@@ -32,6 +29,6 @@ export const QualitySettingsSection: React.FC<QualitySettingsSectionProps> = ({
                     className="w-40"
                 />
             </div>
-        </div>
+        </SettingsSection>
     );
 };

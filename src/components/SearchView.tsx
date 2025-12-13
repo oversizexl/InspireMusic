@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, History, Trash2, X } from 'lucide-react';
 import type { Song, Platform } from '../types';
-import { SongList } from './SongList';
 import { Select } from './ui/Select';
+import { SEARCH_SOURCE_OPTIONS_DESKTOP, SEARCH_SOURCE_OPTIONS_MOBILE } from '../utils/platform';
+import { ConfirmDialog } from './ui/ConfirmDialog';
+import { SongListPanel } from './ui/SongListPanel';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface SearchViewProps {
   keyword: string;
@@ -63,15 +66,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
   lockedFromPage,
 }) => {
   const [history, setHistory] = useState<string[]>(getStoredHistory);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
-    };
-  }, []);
-
   const updateHistory = (updater: (prev: string[]) => string[]) => {
     setHistory(prev => {
       const newHistory = updater(prev);
@@ -79,6 +73,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
       return newHistory;
     });
   };
+
+  const confirmClearHistory = useConfirmDialog({
+    onConfirm: () => updateHistory(() => []),
+  });
 
   const handleSearch = (kw?: string) => {
     const term = kw || keyword;
@@ -98,18 +96,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
     updateHistory((prev) => prev.filter((h) => h !== item));
   };
 
-  const handleClearHistory = () => {
-    if (confirmClear) {
-      updateHistory(() => []);
-      setConfirmClear(false);
-      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
-    } else {
-      setConfirmClear(true);
-      clearTimerRef.current = setTimeout(() => {
-        setConfirmClear(false);
-      }, 3000);
-    }
-  };
+  const handleClearHistory = () => confirmClearHistory.show();
 
   const showResultsPanel = keyword.trim() && (loading || total !== undefined || results.length > 0);
 
@@ -144,13 +131,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
             <Select
               value={searchSource}
               onChange={(val) => onSearchSourceChange(val as 'aggregate' | Platform)}
-              options={[
-                { value: 'aggregate', label: '聚合' },
-                { value: 'netease', label: '网易云' },
-                { value: 'kuwo', label: '酷我' },
-                { value: 'qq', label: 'QQ' },
-              ]}
-              className="w-20 !bg-transparent !border-none !p-0"
+              options={SEARCH_SOURCE_OPTIONS_MOBILE}
+              className="w-25 !bg-transparent !border-none !p-0"
             />
           </div>
           <button
@@ -166,12 +148,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <Select
             value={searchSource}
             onChange={(val) => onSearchSourceChange(val as 'aggregate' | Platform)}
-            options={[
-              { value: 'aggregate', label: '聚合搜索' },
-              { value: 'netease', label: '网易云音乐' },
-              { value: 'kuwo', label: '酷我音乐' },
-              { value: 'qq', label: 'QQ音乐' },
-            ]}
+            options={SEARCH_SOURCE_OPTIONS_DESKTOP}
             className="w-40"
           />
         </div>
@@ -191,44 +168,41 @@ export const SearchView: React.FC<SearchViewProps> = ({
       )}
 
       {showResultsPanel ? (
-        <>
-          <div className="bg-black/20 rounded-xl overflow-hidden">
-            <SongList
-              songs={results}
-              currentSong={currentSong}
-              isPlaying={isPlaying}
-              onPlay={onPlay}
-              indexOffset={(page - 1) * limit}
-            />
-          </div>
+        <SongListPanel
+          songs={results}
+          currentSong={currentSong}
+          isPlaying={isPlaying}
+          onPlay={onPlay}
+          indexOffset={(page - 1) * limit}
+          footer={(
+            <div className="flex items-center justify-center gap-2">
+              {(() => {
+                const pages = Array.from({ length: 5 }, (_, i) => i + 1);
 
-          <div className="flex items-center justify-center gap-2 mt-5">
-            {(() => {
-              const pages = Array.from({ length: 5 }, (_, i) => i + 1);
+                return pages.map((p) => {
+                  const isLocked = lockedFromPage !== undefined && p >= lockedFromPage;
+                  const disabled = loading || isLocked;
+                  const active = p === page;
 
-              return pages.map((p) => {
-                const isLocked = lockedFromPage !== undefined && p >= lockedFromPage;
-                const disabled = loading || isLocked;
-                const active = p === page;
-
-                return (
-                  <button
-                    key={p}
-                    onClick={() => onPageChange(p)}
-                    disabled={disabled}
-                    className={[
-                      "min-w-10 px-3 py-2 rounded-md text-sm font-bold transition-all border",
-                      active ? "bg-primary text-black border-primary" : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10",
-                      disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95",
-                    ].join(' ')}
-                  >
-                    {p}
-                  </button>
-                );
-              });
-            })()}
-          </div>
-        </>
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => onPageChange(p)}
+                      disabled={disabled}
+                      className={[
+                        "min-w-10 px-3 py-2 rounded-md text-sm font-bold transition-all border",
+                        active ? "bg-primary text-black border-primary" : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10",
+                        disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95",
+                      ].join(' ')}
+                    >
+                      {p}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        />
       ) : (
         <>
           {history.length > 0 && !keyword.trim() ? (
@@ -240,8 +214,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 </h3>
                 <button
                   onClick={handleClearHistory}
-                  className={`transition-colors p-2 ${confirmClear ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
-                  title={confirmClear ? "确认清空" : "清空历史"}
+                  className="transition-colors p-2 text-gray-400 hover:text-red-500"
+                  title="清空历史"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -272,6 +246,16 @@ export const SearchView: React.FC<SearchViewProps> = ({
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmClearHistory.open}
+        title="清空搜索历史？"
+        message="将移除本地保存的搜索记录。"
+        danger
+        confirmLabel="清空"
+        onConfirm={confirmClearHistory.handleConfirm}
+        onCancel={confirmClearHistory.handleCancel}
+      />
 
       {/* Version & Copyright Info */}
       <div className="mt-10 mb-8 text-center">

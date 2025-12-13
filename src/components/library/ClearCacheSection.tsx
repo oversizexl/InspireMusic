@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Trash2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Trash2, RefreshCw } from 'lucide-react';
 import { getClearableDataStats, clearUserData } from '../../utils/cache';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { SettingsSection } from './SettingsSection';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 
 interface ClearCacheSectionProps {
     onCacheCleared?: () => void;
@@ -9,7 +12,6 @@ interface ClearCacheSectionProps {
 export const ClearCacheSection: React.FC<ClearCacheSectionProps> = ({ onCacheCleared }) => {
     // Initialize stats directly with the function call (lazy initialization)
     const [stats, setStats] = useState(() => getClearableDataStats());
-    const [showConfirm, setShowConfirm] = useState(false);
     const [clearing, setClearing] = useState(false);
 
     const refreshStats = () => {
@@ -33,13 +35,10 @@ export const ClearCacheSection: React.FC<ClearCacheSectionProps> = ({ onCacheCle
         }, 100);
     };
 
-    return (
-        <div>
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Trash2 size={20} />
-                清理缓存
-            </h3>
+    const confirmClear = useConfirmDialog({ onConfirm: handleClear });
 
+    return (
+        <SettingsSection icon={<Trash2 size={20} />} title="清理缓存">
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-gray-400 text-sm">
@@ -63,7 +62,7 @@ export const ClearCacheSection: React.FC<ClearCacheSectionProps> = ({ onCacheCle
                         <RefreshCw className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={() => setShowConfirm(true)}
+                        onClick={confirmClear.show}
                         disabled={stats.count === 0 || clearing}
                         className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
@@ -73,41 +72,15 @@ export const ClearCacheSection: React.FC<ClearCacheSectionProps> = ({ onCacheCle
             </div>
 
             {/* 确认对话框 */}
-            {showConfirm && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-surface rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                                <AlertCircle className="w-5 h-5 text-red-400" />
-                            </div>
-                            <div>
-                                <h4 className="text-white font-medium mb-1">确认清理缓存？</h4>
-                                <p className="text-sm text-white/60">
-                                    将清除播放队列、播放进度、搜索历史和 API 缓存。
-                                </p>
-                                <p className="text-sm text-white/60 mt-2">
-                                    <span className="text-green-400">✓</span> 音质设置、歌单和收藏会保留
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setShowConfirm(false)}
-                                className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={handleClear}
-                                disabled={clearing}
-                                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors text-sm font-medium"
-                            >
-                                {clearing ? '清理中...' : '确认清理'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            <ConfirmDialog
+                open={confirmClear.open}
+                title="确认清理缓存？"
+                message="将清除播放队列、播放进度、搜索历史和 API 缓存；音质设置、歌单和收藏会保留。"
+                danger
+                confirmLabel={clearing ? '清理中...' : '确认清理'}
+                onConfirm={confirmClear.handleConfirm}
+                onCancel={confirmClear.handleCancel}
+              />
+        </SettingsSection>
     );
 };

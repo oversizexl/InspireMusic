@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Import } from 'lucide-react';
 import { Select } from '../ui/Select';
 import type { Platform } from '../../types';
+import { PLATFORM_OPTIONS_LONG } from '../../utils/platform';
 
 /**
  * 根据URL自动检测平台
@@ -77,11 +78,7 @@ export const ImportPlaylistSection: React.FC<ImportPlaylistSectionProps> = ({
                 <Select
                     value={playlistSource}
                     onChange={(val) => onPlaylistSourceChange(val as Platform)}
-                    options={[
-                        { value: 'netease', label: '网易云音乐' },
-                        { value: 'kuwo', label: '酷我音乐' },
-                        { value: 'qq', label: 'QQ音乐' },
-                    ]}
+                    options={PLATFORM_OPTIONS_LONG}
                     className="w-full md:w-32"
                 />
                 <input
