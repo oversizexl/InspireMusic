@@ -1,25 +1,24 @@
 # InspireMusic
 
-[在线体验](https://ins-music.netlify.app/) | [下载Windows桌面端](https://github.com/WHStudio/InspireMusic/releases/download/v1.3.3/InspireMusic_1.3.3_x64-setup.exe)
+[在线体验](https://ins-music.netlify.app/) | [下载 Windows 桌面端](https://github.com/WHStudio/InspireMusic/releases/download/v1.3.3/InspireMusic_1.3.3_x64-setup.exe)
 
-一个现代化的纯前端音乐播放器，可以在 CloudFlare Pages / Netlify / Vercel 上轻松部署，同时提供使用 Tauri 打包的桌面端。
+一个现代化的纯前端音乐 APP ，可以在 CloudFlare Pages / Netlify / Vercel 上轻松部署，同时提供 Windows 桌面端。
 
-后端基于 [TuneHub API](https://api.tunefree.fun/) ，请多多支持后端项目原作者开发的 [TuneFreeNext](https://tunefree.fun/) 。
+后端基于 [TuneHub API](https://api.tunefree.fun/) ，请多多支持后端项目原作者开发的 [TuneFreeNext](https://tunefree.fun/) ，更强大、更好用。
 
 ## ⚠️ 免责声明
 
-本项目由目前最先进的多款 AI Agent 联合开发，99.9%以上代码由 AI 生成。
+ 1. 本项目仅供个人学习研究使用，禁止用于商业及非法用途。使用本项目所产生的一切后果由使用者自行承担，开发者不承担任何责任。
+ 2. 本项目由目前最先进的多款 AI Agent 联合开发，99.9% 以上代码由 AI 生成。虽然经过多轮迭代和代码审查，且以 MIT 许可证完全开源，但无法为可靠性提供任何保证。
+ 3. 我们承诺，本项目：不存储版权资源、不提供下载功能、不以任何形式盈利。
+ 4. 在部分平台或服务器上部署此类项目，可能面临版权投诉，请遵守相关平台规则。
 
-虽然经过多轮迭代和代码审查，且完全开源，但无法为可靠性提供任何保证。
+## 📌 已知问题
 
-我们承诺：不存储版权资源、不提供下载功能、严禁商用。
-
-**已知问题**：
-
- 1. 受限于浏览器安全策略，部分后端资源无法在 https 生产环境中加载，但使用桌面端不受影响；
- 2. 我们暂未提供 Linux 或 Mac OS 的打包，但您可以使用 Tauri 自行打包和体验；
- 3. 本项目没有在非 Chrome 内核的浏览器上进行测试，不保证完全正常的显示效果；
- 4. Windows 桌面端需要 Webview2 支持，在 Windows 10（从版本 1803 开始）和更高版本的 Windows 上默认提供。
+ 1. 受限于浏览器安全策略，部分资源无法在 https 生产环境中加载，但使用桌面端不受影响。
+ 2. 我们暂未提供 Linux 或 Mac OS 的打包，但您可以使用 Tauri 自行打包和体验。
+ 3. 本项目没有在非 Chrome 内核的浏览器上进行测试，不保证完全正常的显示效果。
+ 4. 使用 Windows 桌面端需要 Webview2 支持，已知在 Windows 10（从版本 1803 开始）和更高版本的 Windows 上默认提供，如您使用其他 Windows 版本，请自行研究解决方案。
 
 ## ✨ 功能特性
 
@@ -69,3 +68,8 @@
 
 - Node.js v24.12.0
 - pnpm 10.25.0
+
+```bash
+# 构建命令，产物位于 /dist
+pnpm build
+```
