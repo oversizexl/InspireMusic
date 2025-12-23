@@ -28,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col gap-2">
         <div className="px-4 py-2 mb-2 text-white font-bold text-xl flex items-center gap-3">
           <img src="/logo.svg" alt="Logo" className="w-10 h-10" />
-          <span className="tracking-tight">InspireMusic</span>
+          <span className="tracking-tight">Music</span>
         </div>
         {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
